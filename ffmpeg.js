@@ -36,7 +36,7 @@ exec(command, (error, stdout, stderr) => {
     return;
   }
 
-  console.log(stderr);
+  console.log(stdout);
   getTranscodedVideoMetadata()
     .then(res => createMasterManifest(res))
     .catch(err => console.log(err))
@@ -58,8 +58,6 @@ function getTranscodedVideoMetadata() {
 
         const values = stdout.split(', ');
         const rawCodec = values.shift();
-
-        console.log(stdout, values, )
 
         resolve({
           dimension: values[1],
@@ -84,5 +82,6 @@ function createMasterManifest(data){
     content += `#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=${el.bandWidth * 0.7},BANDWIDTH=${el.bandWidth},RESOLUTION=${el.dimension},CODECS="${el.codec}",FRAME-RATE=${el.framerate}\n${el.file}\n`
   }
 
+  console.log(content)
   fs.writeFileSync(`${dir}/master.m3u8`, content);
 }
