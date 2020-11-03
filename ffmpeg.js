@@ -1,14 +1,15 @@
 const { exec } = require("child_process");
 const fs = require('fs');
 
-const inputFile = process.argv.slice(2)[0];
+const flags = constructFlagObject(process.argv.slice(2));
+console.log(flags)
 
 const resolutionList = {
-  '480': '1100k',
-  '576': '2400k',
-  '720': '3600k',
-  '960': '4800k',
-  '1080': '6000k'
+  '320': '1100k',
+  '480': '2400k',
+  '576': '3600k',
+  '720': '4800k',
+  '960': '6000k'
 };
 
 const dir = 'outputs/hls';
@@ -17,13 +18,12 @@ if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 
 const segmentsCommand = Object.keys(resolutionList)
   .map((value, index, array) => {
-    let segC = `  -vf scale=-2:${value} -c:a aac -ar 48000 -c:v h264 -profile:v main -crf 20 -sc_threshold 0 -g 48 -keyint_min 48 -hls_time 6 -hls_playlist_type vod -b:v ${resolutionList[value]} -b:a 128k -hls_segment_filename ${dir}/${value}p_%03d.ts ${dir}/${value}p.m3u8`;
-    if (array.length - 1 !== index)
-      segC += ` \\`
+    let segC = `  -vf scale=-2:${value} -c:a aac -ar 48000 -c:v h264 -profile:v main -crf 20 -sc_threshold 0 -g 48 -keyint_min 48 -hls_time ${flags['-sec'] || 6} -hls_flags split_by_time -hls_playlist_type vod -b:v ${resolutionList[value]} -b:a 125k -hls_segment_filename ${dir}/${value}p_%03d.ts ${dir}/${value}p.m3u8`;
+    if (array.length - 1 !== index) segC += ` \\`
     return segC;
   });
 
-const command = `ffmpeg -y -i ${inputFile} \\\n${segmentsCommand.join('\n')} 2>&1`
+const command = `ffmpeg -y -i ${flags['-file']} \\\n${segmentsCommand.join('\n')} 2>&1`
 console.log(command);
 
 exec(command, (error, stdout, stderr) => {
@@ -37,12 +37,12 @@ exec(command, (error, stdout, stderr) => {
   }
 
   console.log(stdout);
-  getTranscodedVideoMetadata()
+  getTranscodedFileMetadata()
     .then(res => createMasterManifest(res))
-    .catch(err => console.log(err))
+    .catch(err => console.log(err));
 });
 
-function getTranscodedVideoMetadata() {
+function getTranscodedFileMetadata() {
   let rsult = Object.keys(resolutionList).map(resolution => {
     const segmentIndex = `ffmpeg -i ${dir}/${resolution}p_000.ts 2>&1 | grep Stream.*Video`
     return new Promise((resolve, reject) => {
@@ -64,8 +64,7 @@ function getTranscodedVideoMetadata() {
           bandWidth: parseInt(resolutionList[resolution].replace('k', '000')),
           resolution: resolution,
           framerate: values[2].replace(" fps", ""),
-          codec: rawCodec.substring(rawCodec.indexOf("Video: ") + 7, rawCodec.indexOf(" (Main)")),
-          file: `${resolution}p.m3u8`
+          codec: rawCodec.substring(rawCodec.indexOf("Video: ") + 7, rawCodec.indexOf(" (Main)"))
         });
       })
     })
@@ -79,9 +78,18 @@ function createMasterManifest(data){
   let content = `#EXTM3U\n#EXT-X-VERSION:3\n`
   for (let i = 0; i < data.length; i++) {
     const el = data[i];
-    content += `#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=${el.bandWidth * 0.7},BANDWIDTH=${el.bandWidth},RESOLUTION=${el.dimension},CODECS="${el.codec}",FRAME-RATE=${el.framerate}\n${el.file}\n`
+    content += `#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=${el.bandWidth * 0.7},BANDWIDTH=${el.bandWidth},RESOLUTION=${el.dimension},CODECS="${el.codec}",FRAME-RATE=${el.framerate}\n${el.resolution}p.m3u8\n`;
   }
 
   console.log(content)
   fs.writeFileSync(`${dir}/master.m3u8`, content);
+}
+
+function constructFlagObject(rawFlags) {
+  const flagObject = {};
+  for (let i = 0; i < rawFlags.length; i++) {
+    const flags = rawFlags[i].split('=');
+    flagObject[flags[0]] = flags[1];
+  }
+  return flagObject;
 }
