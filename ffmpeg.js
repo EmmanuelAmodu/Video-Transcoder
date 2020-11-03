@@ -64,7 +64,7 @@ function getTranscodedFileMetadata() {
           bandWidth: parseInt(resolutionList[resolution].replace('k', '000')),
           resolution: resolution,
           framerate: values[2].replace(" fps", ""),
-          codec: rawCodec.substring(rawCodec.indexOf("Video: ") + 7, rawCodec.indexOf(" (Main)"))
+          // codec: rawCodec.substring(rawCodec.indexOf("Video: ") + 7, rawCodec.indexOf(" (Main)"))
         });
       })
     })
@@ -78,7 +78,7 @@ function createMasterManifest(data){
   let content = `#EXTM3U\n#EXT-X-VERSION:3\n`
   for (let i = 0; i < data.length; i++) {
     const el = data[i];
-    content += `#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=${el.bandWidth * 0.7},BANDWIDTH=${el.bandWidth},RESOLUTION=${el.dimension},CODECS="${el.codec}",FRAME-RATE=${el.framerate}\n${el.resolution}p.m3u8\n`;
+    content += `#EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=${el.bandWidth * 0.7},BANDWIDTH=${el.bandWidth},RESOLUTION=${el.dimension},CODECS="H.264",FRAME-RATE=${el.framerate}\n${el.resolution}p.m3u8\n`;
   }
 
   console.log(content)
