@@ -1,7 +1,8 @@
 # Usage
 
 1. To transcode a local file (raw-flie/tos-teaser.mp4) run
-- node ffmpeg.js -file=raw-file/tos-teaser.mp4 -sec=5 'To generate 5s segments default is 6s'
+- node ffmpeg.js -file=raw-file/tos-teaser.mp4 -sec=5 
+ >To generate 5s segments default is 6s
 
 2. So serve transcoded file run
 - node server.js
