@@ -18,7 +18,7 @@ if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 
 const segmentsCommand = Object.keys(resolutionList)
   .map((value, index, array) => {
-    let segC = `  -vf scale=-2:${value} -c:a aac -ar 48000 -c:v h264 -profile:v main -crf 20 -sc_threshold 0 -g 48 -keyint_min 48 -hls_time ${flags['-sec'] || 6} -hls_flags split_by_time -hls_playlist_type vod -b:v ${resolutionList[value]} -b:a 125k -hls_segment_filename ${dir}/${value}p_%03d.ts ${dir}/${value}p.m3u8`;
+    let segC = `  -vf scale=-2:${value} -c:a aac -ar 48000 -c:v libx264 -profile:v high -crf 20 -sc_threshold 0 -g 48 -keyint_min 48 -hls_time ${flags['-sec'] || 6} -hls_flags split_by_time -hls_playlist_type vod -b:v ${resolutionList[value]} -maxrate:v ${(resolutionList[value].slice(0, -1) * 1000) + ((resolutionList[value].slice(0, -1) * 1000) * 0.1)} -bufsize:v ${(resolutionList[value].slice(0, -1) * 1000) * 0.35} -hls_segment_filename ${dir}/${value}p_%03d.ts ${dir}/${value}p.m3u8`;
     if (array.length - 1 !== index) segC += ` \\`
     return segC;
   });
@@ -64,7 +64,6 @@ function getTranscodedFileMetadata() {
           bandWidth: parseInt(resolutionList[resolution].replace('k', '000')),
           resolution: resolution,
           framerate: values[2].replace(" fps", ""),
-          // codec: rawCodec.substring(rawCodec.indexOf("Video: ") + 7, rawCodec.indexOf(" (Main)"))
         });
       })
     })
